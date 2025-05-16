@@ -1,6 +1,5 @@
-package test.com.luotao.并发编程.app.highcache.concurrenthashmap.byfuture;
+package test.com.luotao.并发编程.app.highcache.concurrenthashmap.byfuture.byputIfAbsent;
 
-import test.com.luotao.并发编程.app.highcache.concurrenthashmap.CacheByConcurrentHashMap;
 
 import java.util.Map;
 import java.util.concurrent.*;
@@ -44,7 +43,7 @@ class Computer implements Computable<String,Integer>{
  *  2025/5/15 17:07
  * @author LuoTao
  */
-public class CacheByConcurrentHashMapByFuture<K,V> implements Computable<K,V>{
+public class CacheByConcurrentHashMapByFutureByPutIfAbsent<K,V> implements Computable<K,V>{
     /**
     *  加final关键字增加安全：该变量只能被赋值一次，且一旦被赋值，final的变量指向的引用就不会变化了。
     *  即缓存一旦建立之后，指向的引用就不会变化
@@ -56,7 +55,7 @@ public class CacheByConcurrentHashMapByFuture<K,V> implements Computable<K,V>{
     private final Map<K, Future<V>> cache = new ConcurrentHashMap<>(); //Future包装V
     private final Computable<K,V> myComputer; //  被装饰的对象:持有一个 Component抽象组件 的引用。
 
-    public CacheByConcurrentHashMapByFuture(Computable<K,V> myComputer) {
+    public CacheByConcurrentHashMapByFutureByPutIfAbsent(Computable<K,V> myComputer) {
         this.myComputer = myComputer;
     }
 
@@ -69,16 +68,11 @@ public class CacheByConcurrentHashMapByFuture<K,V> implements Computable<K,V>{
     @Override
     public  V doCompute(K key) throws Exception {
         /**
-        *  如果未命中缓存，则创建一个 Callable 封装计算逻辑并包装成 FutureTask ，然后将 FutureTask 放入缓存。
-         *然后调用FutureTask.run异步执行任务，最后从FutureTask.get()阻塞等待任务完成拿结果。
-         *
-         *
-         * 虽然使用了 ConcurrentHashMap和 Future<V> ，但ConcurrentHashMap.get + put这种组合操作也和hashmap一样不是原子操作，仍可能出现重复计算
-        * 多个线程同时进入 if(result == null ) 分支: 第一个线程还未put时，第二个线程也进入了if分支，导致重复计算。
+        *  如果未命中缓存，则创建一个 Callable 封装计算逻辑并包装成 FutureTask ，然后将 FutureTask putIfAbsent原子性操作存入，如果返回值为null，则表示还没有添加缓存，执行任务FutureTask.run()，如果返回值非null，则表示已存在FutureTask，直接复用任务get() 阻塞等待结果
              线程 A 调用 cache.get(key)，发现缓存未命中（返回 null）；
              线程 B 同样调用 cache.get(key)，也发现缓存未命中；
             线程 A 创建 FutureTask、写入缓存并执行任务
-             线程 B 也执行了同样的计算（已经执行完 doCompute）并再次写入缓存，第二次写入覆盖第一次结果（虽然不影响最终值，但浪费资源）。
+             线程 B 因为 A 已经插入了 FutureTask，B 会直接获取到这个任务，而不会重复创建，从而避免重复计算。
         * @author: LuoTao
         * 2025-05-16 17:41:34
         **/
@@ -95,11 +89,9 @@ public class CacheByConcurrentHashMapByFuture<K,V> implements Computable<K,V>{
             };
             FutureTask<V> ft = new FutureTask<>(callable); //创建FutureTask任务，将任务逻辑封装到FutureTask中
 
-            // 先将FutureTask放入缓存，这样其他线程也可以获取到FutureTask
-            result = ft; // 将result的null赋值,否则get()时会空指针
             /**
-            * put(key, ft)
-            *    无论指定的键是否已经存在，都会将新的值放入Map中
+             * put(key, ft)
+             *    无论指定的键是否已经存在，都会将新的值放入Map中
              *    如果键已存在，则旧值会被覆盖并返回对应的旧值。
              *    如果键不存在，则添加新的键值对并则返回 null。
              *
@@ -107,32 +99,34 @@ public class CacheByConcurrentHashMapByFuture<K,V> implements Computable<K,V>{
              *    只有当指定的键不存在时，才会将键值对插入到Map中
              *    如果键已存在，旧值不会被覆盖，而是直接返回对应的当前值。
              *    如果键不存在，则添加新的键值对并则返回 null。
-            * @author: LuoTao
-            * 2025-05-17 02:19:34
-            **/
-            cache.put(key, ft);
-
-
-            System.out.println("从ft调用了doCompute计算");
-            /**
-            * FutureTask.run() 被设计为只能执行一次:如果多个线程都调用同一个 FutureTask 的 run()，只有第一个调用会真正执行任务，其他调用会被忽略
-            *
-             * 但是如果两个线程同时进来走if(result == null )分支并创建 了FutureTask时，也会导致重复计算
-             * 解决方案：
-             *      使用 putIfAbsent原子性操作，而不是put；
-             *      然后判断putIfAbsent的返回值是否为空，
-             *      为空则表示还没有添加缓存，执行任务FutureTask.run()
-             *      不为空则表示已存在FutureTask，直接从已存在的FutureTask拿结果
-             *
-            * @author: LuoTao
-            * 2025-05-17 01:38:56
-            **/
-            ft.run(); // 执行任务 
+             * @author: LuoTao
+             * 2025-05-17 02:19:34
+             **/
+            // 先将FutureTask放入缓存，这样其他线程也可以获取到FutureTask
+            result = cache.putIfAbsent(key, ft);// 原子性操作
+            if(result == null){ //线程 A 创建 FutureTask、写入缓存并执行任务,同时来的线程B执行到这里发现键已存在，则跳过这个分支的逻辑，直接复用任务通过 get() 阻塞等待结果
+                result = ft; // 将result的null赋值,否则get()时会空指针
+                System.out.println("从ft调用了doCompute计算");
+                /**
+                 * FutureTask.run() 被设计为只能执行一次:如果多个线程都调用同一个 FutureTask 的 run()，只有第一个调用会真正执行任务，其他调用会被忽略
+                 *
+                 * 但是如果两个线程同时进来走if(result == null )分支并创建 了FutureTask时，也会导致重复计算
+                 * 解决方案：
+                 *      使用 putIfAbsent原子性操作，而不是put；
+                 *      然后判断putIfAbsent的返回值是否为空，
+                 *      为空则表示还没有添加缓存，执行任务FutureTask.run()
+                 *      不为空则表示已存在FutureTask，直接从已存在的FutureTask拿结果
+                 *
+                 * @author: LuoTao
+                 * 2025-05-17 01:38:56
+                 **/
+                ft.run(); // 执行任务
+            }
         }
         return result.get(); // 阻塞直到任务完成拿到结果
     }
     public static void main(String[] args) throws Exception {
-        CacheByConcurrentHashMapByFuture<String,Integer> cache = new CacheByConcurrentHashMapByFuture(new Computer());
+        CacheByConcurrentHashMapByFutureByPutIfAbsent<String,Integer> cache = new CacheByConcurrentHashMapByFutureByPutIfAbsent(new Computer());
         LoggingDecorator<String,Integer> loggedAndCached = new LoggingDecorator(cache); //将具体组件传递给具体装饰者的构造函数，形成组合关系
         // 第一次调用 doCompute("1") 时，缓存中没有值，会委托给内部的 myComputer 进行计算并缓存结果。
         new Thread(
