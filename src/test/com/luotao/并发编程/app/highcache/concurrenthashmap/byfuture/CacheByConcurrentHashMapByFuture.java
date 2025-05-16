@@ -46,7 +46,7 @@ class Computer implements Computable<String,Integer>{
  */
 public class CacheByConcurrentHashMapByFuture<K,V> implements Computable<K,V>{
     /**
-    *  给HashMap加final关键字增加安全：该变量只能被赋值一次，且一旦被赋值，final的变量指向的引用就不会变化了。
+    *  加final关键字增加安全：该变量只能被赋值一次，且一旦被赋值，final的变量指向的引用就不会变化了。
     *  即缓存一旦建立之后，指向的引用就不会变化
      *
      *  使用 Future<V> 来缓存每个 key 对应的异步计算任务的结果
@@ -69,18 +69,22 @@ public class CacheByConcurrentHashMapByFuture<K,V> implements Computable<K,V>{
     @Override
     public  V doCompute(K key) throws Exception {
         /**
-        * 虽然使用了 ConcurrentHashMap，但ConcurrentHashMap.get + put这种组合操作也和hashmap一样不是原子操作，仍可能出现重复计算
+        *  如果未命中缓存，则创建一个 Callable 封装计算逻辑并包装成 FutureTask ，然后将 FutureTask 放入缓存。
+         *然后调用FutureTask.run异步执行任务，最后从FutureTask.get()阻塞等待任务完成拿结果。
+         *
+         *
+         * 虽然使用了 ConcurrentHashMap和 Future<V> ，但ConcurrentHashMap.get + put这种组合操作也和hashmap一样不是原子操作，仍可能出现重复计算
         * 多个线程同时进入 if(result == null ) 分支: 第一个线程还未put时，第二个线程也进入了if分支，导致重复计算。
              线程 A 调用 cache.get(key)，发现缓存未命中（返回 null）；
              线程 B 同样调用 cache.get(key)，也发现缓存未命中；
-             线程 A 执行耗时计算并写入缓存；
+            线程 A 创建 FutureTask、写入缓存并执行任务
              线程 B 也执行了同样的计算（已经执行完 doCompute）并再次写入缓存，第二次写入覆盖第一次结果（虽然不影响最终值，但浪费资源）。
         * @author: LuoTao
         * 2025-05-16 17:41:34
         **/
 
         Future<V> result = cache.get(key);// 先检查cache里面有没有缓存
-        if(result == null ){ // 发生重复计算时进入分支
+        if(result == null ){ // 发生重复计算或者缓存未命中时进入分支并执行一个 FutureTask 来计算结果
             // 封装一个Callable对象，封装异步执行计算任务的逻辑
             Callable<V> callable = new Callable<V>() {
                 // 匿名内部类：Callable接口的实现类
@@ -96,7 +100,7 @@ public class CacheByConcurrentHashMapByFuture<K,V> implements Computable<K,V>{
             cache.put(key, ft);
 
             System.out.println("从ft调用了doCompute计算");
-            ft.run(); // 执行任务
+            ft.run(); // 执行任务 
         }
         return result.get(); // 阻塞直到任务完成拿到结果
     }
