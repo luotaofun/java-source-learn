@@ -86,6 +86,7 @@ public class Executors {
      * @throws IllegalArgumentException if {@code nThreads <= 0}
      */
     public static ExecutorService newFixedThreadPool(int nThreads) {
+        //它也是调用了ThreadPoolExecutor创建线程池，但是corePoolSize=maxPoolSize，线程池会创建固定数量的线程,用了LinkedBlockingQueue这个无界队列，队列容量无限可能导致OOM
         return new ThreadPoolExecutor(nThreads, nThreads,
                                       0L, TimeUnit.MILLISECONDS,
                                       new LinkedBlockingQueue<Runnable>());

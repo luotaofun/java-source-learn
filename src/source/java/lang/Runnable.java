@@ -53,7 +53,7 @@ package java.lang;
  * @since   JDK1.0
  */
 @FunctionalInterface
-public interface Runnable {
+public interface Runnable { //实现代理类(Thread)和实现目标类（被代理类，即Runnable接口的实例对象）都实现了同一个接口(Runnable)。
     /**
      * When an object implementing interface <code>Runnable</code> is used
      * to create a thread, starting the thread causes the object's
@@ -65,5 +65,11 @@ public interface Runnable {
      *
      * @see     java.lang.Thread#run()
      */
-    public abstract void run();
+    public abstract void run(); //使用 executor.execute(Runnable)
+    /**
+    *  Callable.call()可以抛出异常,支持返回值（类型为 V）通常配合 ExecutorService.submit(Callable)
+    *
+    * @author: LuoTao
+    * 2025-05-16 19:01:46
+    **/
 }

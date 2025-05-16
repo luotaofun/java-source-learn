@@ -111,7 +111,7 @@ import java.util.regex.PatternSyntaxException;
 public final class String
     implements java.io.Serializable, Comparable<String>, CharSequence {
     /** The value is used for character storage. */
-    private final char value[];
+    private final char value[]; // 字符类型的数组
 
     /** Cache the hash code for the string */
     private int hash; // Default to 0
@@ -1149,11 +1149,11 @@ public final class String
             char c1 = v1[k];
             char c2 = v2[k];
             if (c1 != c2) {
-                return c1 - c2;
+                return c1 - c2; // 逐一比对ASCII码，不一样时返回差值：abc abbde   return b-c
             }
             k++;
         }
-        return len1 - len2;
+        return len1 - len2; // 字符数组长度的差值：abc abcde
     }
 
     /**

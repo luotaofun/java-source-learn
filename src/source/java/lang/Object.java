@@ -146,7 +146,7 @@ public class Object {
      * @see     java.util.HashMap
      */
     public boolean equals(Object obj) {
-        return (this == obj);
+        return (this == obj); //比较的是引用
     }
 
     /**

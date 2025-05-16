@@ -123,6 +123,7 @@ public class ArrayList<E> extends AbstractList<E>
      * distinguish this from EMPTY_ELEMENTDATA to know how much to inflate when
      * first element is added.
      */
+    //JDK1.7的ArrayList使用无参构造函数创建 ArrayList 时，直接就初始化了长度为10的空数组，而JDK1.8ArrayList是初始化一个final空数组，在第一次add时才分配默认容量10（延迟加载优化内存开销）
     private static final Object[] DEFAULTCAPACITY_EMPTY_ELEMENTDATA = {};
 
     /**
@@ -221,7 +222,7 @@ public class ArrayList<E> extends AbstractList<E>
 
     private void ensureCapacityInternal(int minCapacity) {
         if (elementData == DEFAULTCAPACITY_EMPTY_ELEMENTDATA) {
-            minCapacity = Math.max(DEFAULT_CAPACITY, minCapacity);
+            minCapacity = Math.max(DEFAULT_CAPACITY, minCapacity);//分配默认容量10
         }
 
         ensureExplicitCapacity(minCapacity);
@@ -231,7 +232,7 @@ public class ArrayList<E> extends AbstractList<E>
         modCount++;
 
         // overflow-conscious code
-        if (minCapacity - elementData.length > 0)
+        if (minCapacity - elementData.length > 0) // 如果所需最小容量大于当前数组长度，则调用 grow() 进行扩容
             grow(minCapacity);
     }
 
@@ -250,6 +251,7 @@ public class ArrayList<E> extends AbstractList<E>
      * @param minCapacity the desired minimum capacity
      */
     private void grow(int minCapacity) {
+        // 如果所需最小容量大于当前数组长度，则调用 grow() 进行扩容，扩容为1.5倍：原容量+原容量右移一位（相当于除以2）
         // overflow-conscious code
         int oldCapacity = elementData.length;
         int newCapacity = oldCapacity + (oldCapacity >> 1);
@@ -258,7 +260,7 @@ public class ArrayList<E> extends AbstractList<E>
         if (newCapacity - MAX_ARRAY_SIZE > 0)
             newCapacity = hugeCapacity(minCapacity);
         // minCapacity is usually close to size, so this is a win:
-        elementData = Arrays.copyOf(elementData, newCapacity);
+        elementData = Arrays.copyOf(elementData, newCapacity); // 创建新数组并将旧数组内容拷贝到新数组中（System.arraycopy）
     }
 
     private static int hugeCapacity(int minCapacity) {

@@ -137,6 +137,8 @@ import sun.security.util.SecurityConstants;
  * @see     #stop()
  * @since   JDK1.0
  */
+//静态代理：实现代理类(Thread)和实现目标类（被代理类，即Runnable接口的实例对象）都实现了同一个接口(Runnable)。
+// Thread代理一个Runnable接口的实例对象,通过构造函数注入。通过目标类（被代理类）构造出代理类（Thread）的实例对象，不仅有目标类本身的方法，还有代理类扩展的方法。
 public
 class Thread implements Runnable {
     /* Make sure registerNatives is the first thing <clinit> does. */
@@ -457,7 +459,7 @@ class Thread implements Runnable {
      *         is started. If {@code null}, this classes {@code run} method does
      *         nothing.
      */
-    public Thread(Runnable target) {
+    public Thread(Runnable target) { // 代理类扩展了实现目标类（被代理类，即Runnable接口的实例对象）
         init(null, target, "Thread-" + nextThreadNum(), 0);
     }
 

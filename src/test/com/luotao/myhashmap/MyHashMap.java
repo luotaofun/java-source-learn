@@ -1,5 +1,16 @@
-package test.myhashmap;
+package test.com.luotao.myhashmap;
 
+interface Map<K,V> {
+    V put(K k, V v);
+    V get(K k);
+    int size();//返回当前map中元素的个数
+
+    // Entry接口
+    interface Entry<K,V>{
+        K getKey();
+        V getValue();
+    }
+}
 /**
  * @Classname HashMap
  * @Description 手写HashMap
@@ -8,6 +19,12 @@ package test.myhashmap;
  * @Author LuoTao
  */
 public class MyHashMap<K, V> implements Map<K, V> {
+    public static void main(String[] args) {
+        MyHashMap myHashMap = new MyHashMap();
+        myHashMap.put("张三", 18);
+        myHashMap.put("张三", 20);
+        System.out.println(myHashMap.get("张三"));
+    }
     Entry<K, V>[] table = null;    // 存放数据的数组
     int size=0;
 

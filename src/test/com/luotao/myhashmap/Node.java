@@ -1,4 +1,4 @@
-package test.myhashmap;
+package test.com.luotao.myhashmap;
 
 /**
  * @Classname 链表
