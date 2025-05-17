@@ -350,7 +350,7 @@ class CacheExpireDecorator<K, V> implements Computable<K, V>{
 
     /**
      * 对原始计算逻辑（被装饰的原始对象）扩展功能: 重载doCompute，添加设置缓存过期功能
-     *
+     *如果不设置过期时间，缓存会无限增长，占用内存
      * 高并发时的问题：缓存雪崩
      * 如果多个线程同时调用 doCompute(key)，并且这些线程都在同一时间内过期，那么这些线程都会执行计算，导致打爆CPU和数据库
      * 解决方案：
@@ -361,7 +361,7 @@ class CacheExpireDecorator<K, V> implements Computable<K, V>{
      * 2025/5/17 15:17
      * @return V
      * @param key
-     * @param expireTime 缓存过期时间(毫秒)
+     * @param expireTime 每隔expireTime时间去判断缓存是否过期
      **/
     public V doCompute(K key,long expireTime ) throws Exception {
         if (expireTime > 0) {
@@ -378,7 +378,7 @@ class CacheExpireDecorator<K, V> implements Computable<K, V>{
     /**
      * 从缓存中移除
      * 先检查缓存中是否存在对应的 Future 对象
-     * 如果存在，判断Future是否执行完毕，如果没有则取消任务
+     * 如果存在，判断Future是否执行完毕，如果没有则取消任务，否则直接从缓存中移除
      * @author: LuoTao
      * 2025-05-17 15:25:59
      **/
