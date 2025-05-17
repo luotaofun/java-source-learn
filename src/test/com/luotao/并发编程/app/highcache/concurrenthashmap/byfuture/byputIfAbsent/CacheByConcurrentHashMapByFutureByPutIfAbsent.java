@@ -37,7 +37,7 @@ class Computer implements Computable<String,Integer>{
     }
 }
 /**
-## 用 hashmap 实现缓存，运用了装饰者模式
+## 用 map 实现缓存，运用了装饰者模式
  具体装饰者（ConcreteDecorator）：实现了抽象组件Computable接口，负责给具体组件Computer添加额外功缓存功能
  * @version 1.0.0
  *  2025/5/15 17:07
@@ -191,4 +191,6 @@ class LoggingDecorator<K, V> implements Computable<K, V> {
         return result;
     }
 }
+
+
 
