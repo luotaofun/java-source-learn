@@ -7,8 +7,6 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
- * @Classname MyThreadpool
- * @Description
 ## 线程池
 > Tomcat也利用了线程池，服务器接受到大量请求时，使用线程池减少线程创建和销毁的开销，提高服务器效率
 > 线程池可以复用每个线程，从而减少创建和销毁线程的开销
@@ -105,7 +103,6 @@ public class MyThreadPool {
 
 
 /**
-* @Description:
 ## 为什么要用线程池？
 > 不使用线程池，使用for循环每来一个任务都开一个线程处理
 >  线程的创建和销毁需要JVM和操作系统提供一些辅助操作，也会给GC压力
@@ -163,7 +160,6 @@ class EverTaskOneThread  {
 }
 
 /**
- * @Description:
 ## newFixedThreadPool
 > 它也是调用了ThreadPoolExecutor创建线程池，但是corePoolSize=maxPoolSize，线程池会创建固定数量的线程,用了LinkedBlockingQueue这个无界队列，队列容量无限可能导致OOM
  * @Author: LuoTao
@@ -190,7 +186,6 @@ class MyFixedThreadPoolOOM{
 
 
 /**
-* @Description:
 > newSingleThreadExecutor和newFixedThreadPool原理基本一样，只不过设置了corePoolSize=maxPoolSize=1，线程池会创建单个线程,也用了LinkedBlockingQueue这个无界队列，队列容量无限可能导致OOM
 * @Author: LuoTao
 * @Date: 2025-05-15 15:43:56
@@ -210,7 +205,6 @@ class MySingleThreadExecutor{
 }
 
 /**
- * @Description:
 CacheThreadPoll是可缓存线程池，无容量阻塞队列，自动回收多余线程
 也是调用了ThreadPoolExecutor创建线程池
 corePoolSize=0，所有线程都是临时线程，需要线程时就临时创建
@@ -240,7 +234,6 @@ class MyCacheThreadPool{
 }
 
 /**
-* @Description:
 ScheduledThreadPool是定时任务或重复执行任务的线程池，无容量阻塞队列，自动回收多余线程
 调用了ScheduledThreadPoolExecutor创建线程池，它extends ThreadPoolExecutor implements ScheduledExecutorService
 super(corePoolSize, Integer.MAX_VALUE, 0, NANOSECONDS,
@@ -274,7 +267,6 @@ class MyScheduledThreadPool{
 }
 
 /**
-*
  * ## shutdown停止线程池
  * 线程池为了优雅起见，会把正在执行的任务以及队列中等待的任务都执行完毕后再关闭
  * 即把存量的任务执行完毕，新的增量就不会有了，也就是再有新的任务提交就会抛出拒绝的异常。
