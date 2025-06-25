@@ -1,5 +1,6 @@
 package test.com.luotao.并发编程.lock.lock;
 
+import java.util.Random;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -33,6 +34,9 @@ public class MyLock {
  * synchronized遇到异常时JVM会自动释放锁，这是隐藏在背后的逻辑
  * 而Lock需要在Finally中显式的保证锁最终被释放
  *
+ * ## ReentrantLock可重入锁
+ * 
+ * 
  * @author LuoTao
  * @version 1.0.0
  * 2025/5/19 18:18
@@ -122,5 +126,83 @@ class ByTryLock implements  Runnable{
             }
 
         }
+    }
+}
+
+/**
+ # 公平锁与非公平锁
+
+ > 在实际开发中，非公平锁是更优的选择。例如，ReentrantLock` 默认就是非公平的，`synchronized` 关键字实现的也是非公平锁。这是因为在大多数高并发场景下，**吞吐量**往往比严格的**公平性**更为重要。虽然非公平锁存在线程饥饿的风险，但在实际应用中，这种风险通常可以通过其他机制（如线程调度器、任务队列等）来缓解。
+
+ 公平锁和非公平锁是并发编程中，对多个线程请求同一把锁时，获取锁的策略的两种不同实现。
+
+ *   **等待队列（Waiting Queue）**：当多个线程竞争同一把锁而未能立即获取时，它们会被放入一个等待队列中。
+ *   **锁的获取机制**：
+ *   **公平锁**：多个线程在请求同一把锁时，会按照它们请求的顺序来获取锁。在锁被释放时，会检查等待队列。如果队列中有线程在等待，那么锁会严格地交给队列头部的线程。每个线程都有机会执行。性能开销相对较大。因为每次释放锁后，都需要进行上下文切换，唤醒等待队列中的线程，这会带来额外的 CPU 消耗。吞吐量相对较低。
+ *   **非公平锁**：允许后来的线程“插队”获取锁，即使有其他线程已经在等待。在锁被释放时，它会尝试让当前正在请求锁的线程（可能是刚释放锁的线程，也可能是新来的线程）立即获取锁，而不会优先检查等待队列。只有当这种“插队”尝试失败（比如没有线程立即请求，或者请求的线程需要被唤醒且成本较高）时，才会去检查等待队列。性能开销相对较小，吞吐量更高。因为它允许“插队”，减少了不必要的上下文切换和线程唤醒开销。
+
+ 公平锁：你排在队伍的最后面，每个人依次买票，只有前面的人都买完了，才轮到你。没有人可以插队。
+ 非公平锁：你刚排到队尾，突然有人跑过来直接插队买票了。虽然前面还有人在等，但他刚好在售票窗口空闲的一瞬间插进来，效率更高，但你可能要等更久甚至一直等不到。
+
+ ReentrantLock(true)：构造一个公平锁，线程必须按照请求顺序获取锁。
+ ReentrantLock(false) 或默认构造：构造一个非公平锁，允许线程尝试抢占锁。
+
+ 公平锁流程：
+ 线程尝试获取锁。
+ 如果锁空闲且等待队列为空，则线程获得锁并执行。
+ 如果锁被占用或等待队列不为空，当前线程进入等待队列排队。
+ 当前持有锁的线程释放锁后，AQS 唤醒队列头部的线程，它再次尝试获取锁。
+ 成功获取后继续执行。
+ 非公平锁流程：
+ 线程尝试获取锁。
+ 如果锁空闲，不管是否有等待线程，当前线程立即获取锁并执行。
+ 如果锁被占用，线程进入等待队列。
+ 锁释放后，AQS 唤醒队列头部线程，该线程尝试获取锁；但此时如果有新线程也尝试获取，可能会“插队”成功。
+ 被唤醒线程如果失败，继续等待或重新入队。
+
+*
+* @author: LuoTao
+* 2025-05-27 14:17:42
+**/
+class FaireLock{
+    public static void main(String[] args) throws InterruptedException {
+        for (int i = 0; i < 10; i++) {
+            new Thread(()->{
+                print(new Object());
+            }).start();
+            Thread.sleep(1000);
+        }
+    }
+    private static Lock queueLock = new ReentrantLock(true);
+//    private static Lock queueLock = new ReentrantLock(false);
+    /**
+     * 每个线程打印两份
+     *
+     * @author LuoTao
+     * 2025/5/27 14:28
+     **/
+    static void print(Object documentObj){
+        System.out.println(Thread.currentThread().getName() + " 开始打印 ");
+        queueLock.lock();
+        try {
+            int time = (new Random().nextInt(10) + 1) ;
+            System.out.println(Thread.currentThread().getName() + "正在打印，需要时间" + time + "秒");
+            Thread.sleep(time* 1000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        } finally {
+            queueLock.unlock();
+        }
+        queueLock.lock();
+        try {
+            int time = (new Random().nextInt(10) + 1) ;
+            System.out.println(Thread.currentThread().getName() + "正在打印，需要时间" + time + "秒" );
+            Thread.sleep(time * 1000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        } finally {
+            queueLock.unlock();
+        }
+        System.out.println(Thread.currentThread().getName() + " 结束打印 ");
     }
 }
